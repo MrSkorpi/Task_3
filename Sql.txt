@@ -1,0 +1,73 @@
+***Вывод 10 клиентов по критериям***
+
+SELECT DISTINCT Cus.CustomerId, Cus.FirstName, Cus.Phone, Cus.Company
+FROM Customer AS Cus
+	JOIN Invoice AS I ON Cus.CustomerId = I.CustomerId
+	JOIN Employee AS E ON Cus.SupportRepId = E.EmployeeId
+	JOIN InvoiceLine IL ON I.InvoiceId = IL.InvoiceId
+	JOIN Track AS T ON IL.TrackId=T.TrackId
+	JOIN Genre AS G ON T.GenreId=G.GenreId
+		WHERE 2021 - e.BirthDate >50 AND G.Name <> 'Rock'
+ORDER BY Cus.City ASC, Cus.Email DESC
+LIMIT 10
+
+
+
+***Вывод списка пользователей с указанием руководителя***
+
+SELECT e.FirstName || ' ' || e.LastName AS FullName, e.Phone, l.FirstName || ' ' || l.LastName AS LeaderFullName, l.Phone as LeaderPhone
+FROM Employee AS e
+	JOIN Employee AS l ON l.EmployeeId = e.ReportsTo
+
+
+
+***Вывод клиентов с самыми дорогими треками***
+
+SELECT DISTINCT c.FirstName, c.Phone
+FROM Customer AS c 
+JOIN Invoice I ON c.CustomerId = I.CustomerId
+JOIN InvoiceLine IL ON I.InvoiceId = IL.InvoiceId
+JOIN Track AS T ON IL.TrackId=T.TrackId
+	WHERE il.UnitPrice = (SELECT MAX(UnitPrice)
+		FROM InvoiceLine)
+ORDER BY c.FirstName
+
+
+
+***Покупатели, проживающие в одном городе***
+
+SELECT DISTINCT c.FirstName || ' ' || c.LastName AS FullName, c.Phone
+FROM Customer c
+	INNER JOIN Invoice I ON I.CustomerId = c.CustomerId
+	WHERE i.total > 0 AND c.City IN (Select c.City
+		FROM Customer c
+        GROUP BY (c.City)
+        HAVING count(c.City) > 1)
+
+
+
+***Топ 3 города***
+
+SELECT i.BillingCity
+FROM Invoice i
+GROUP BY i.BillingCity
+ORDER BY SUM(i.total) DESC
+LIMIT 3
+
+
+
+***Самый популярный жанр***
+
+SELECT DISTINCT Genre.Name, Track.Name, Album.Title, Artist.Name FROM Track
+INNER JOIN Genre on Track.GenreId = (
+	SELECT Genre.GenreId
+	WHERE Genre.Name=(
+		SELECT Genre.Name
+		FROM Track
+		LEFT JOIN InvoiceLine on InvoiceLine.TrackId=Track.TrackId
+		LEFT JOIN Genre on Genre.GenreId=Track.GenreId
+		GROUP BY Genre.Name
+		ORDER by count() DESC
+		LIMIT 1))
+INNER JOIN Album on Album.AlbumId=Track.AlbumId
+INNER JOIN Artist on Artist.ArtistId=Album.ArtistId
